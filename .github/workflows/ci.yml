@@ -54,26 +54,43 @@ jobs:
           fi
           echo "✅ Todos os arquivos estão dentro do limite (< 500KB)"
 
-      - name: 'Bloqueio de palavras proibidas: TODO, FIXME, senha, password'
+      - name: 'Bloqueio de palavras proibidas (palavras sensíveis)'
+
         run: |
           echo "Verificando presença de palavras bloqueadas..."
           
-          if grep -r "TODO" . --exclude-dir=.git --exclude-dir=node_modules --exclude="*.md"; then
+          if grep -r "TODO" . \
+            --exclude-dir=.git \
+            --exclude-dir=node_modules \
+            --exclude-dir=.github \
+            --exclude="*.md"; then
             echo "❌ ERRO: Palavra 'TODO' encontrada no código!"
             exit 1
           fi
           
-          if grep -r "FIXME" . --exclude-dir=.git --exclude-dir=node_modules --exclude="*.md"; then
+          if grep -r "FIXME" . \
+            --exclude-dir=.git \
+            --exclude-dir=node_modules \
+            --exclude-dir=.github \
+            --exclude="*.md"; then
             echo "❌ ERRO: Palavra 'FIXME' encontrada no código!"
             exit 1
           fi
           
-          if grep -ri "senha" . --exclude-dir=.git --exclude-dir=node_modules --exclude="*.md"; then
+          if grep -ri "senha" . \
+            --exclude-dir=.git \
+            --exclude-dir=node_modules \
+            --exclude-dir=.github \
+            --exclude="*.md"; then
             echo "❌ ERRO: Palavra 'senha' encontrada no código!"
             exit 1
           fi
           
-          if grep -ri "password" . --exclude-dir=.git --exclude-dir=node_modules --exclude="*.md"; then
+          if grep -ri "password" . \
+            --exclude-dir=.git \
+            --exclude-dir=node_modules \
+            --exclude-dir=.github \
+            --exclude="*.md"; then
             echo "❌ ERRO: Palavra 'password' encontrada no código!"
             exit 1
           fi
