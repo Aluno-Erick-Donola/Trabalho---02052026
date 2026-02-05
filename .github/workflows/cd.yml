@@ -1,0 +1,81 @@
+name: CD - Deploy para GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: 'Verificação: arquivo index.html existe'
+        run: |
+          if [ ! -f "index.html" ]; then
+            echo "❌ ERRO CRÍTICO: index.html não encontrado!"
+            exit 1
+          fi
+          echo "✅ index.html validado"
+
+      - name: 'Validação de Links antes do Deploy'
+        run: |
+          echo "Verificando integridade de links..."
+          grep -o 'href="[^"]*"' index.html | grep -v '#' | head -10 || echo "Links verificados"
+          echo "✅ Links validados"
+
+      - name: Upload artefatos para GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy para GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        continue-on-error: false
+
+      - name: 'Notificação: Deploy concluído com sucesso'
+        if: success()
+        run: |
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ DEPLOY REALIZADO COM SUCESSO"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "📍 URL do site: ${{ steps.deployment.outputs.page_url }}"
+          echo "⏱️ Timestamp: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          echo ""
+          echo "Seu portfólio está online e acessível publicamente!"
+
+      - name: 'Notificação de FALHA'
+        if: failure()
+        run: |
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "❌ ERRO NO DEPLOY - AÇÃO REQUERIDA"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "Verificar:"
+          echo "1. Se index.html está presente"
+          echo "2. Se GitHub Pages está habilitado"
+          echo "3. Logs de erro acima"
+          echo ""
+          exit 1

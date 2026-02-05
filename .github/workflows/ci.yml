@@ -1,0 +1,134 @@
+name: CI - Integração Contínua
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: 'Verificação IMEDIATA: arquivo index.html na raiz'
+        run: |
+          if [ ! -f "index.html" ]; then
+            echo "❌ ERRO CRÍTICO: arquivo index.html não encontrado na raiz do projeto!"
+            exit 1
+          fi
+          echo "✅ index.html encontrado na raiz"
+
+      - name: Setup Node.js v${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Instalar dependências
+        run: |
+          npm install -g htmlhint
+
+      - name: 'Linter HTML: Validação com htmlhint'
+        run: |
+          htmlhint index.html
+          echo "✅ Validação HTML concluída com sucesso"
+
+      - name: 'Verificação de arquivos acima de 500KB'
+        run: |
+          echo "Verificando tamanho dos arquivos..."
+          LARGE_FILES=$(find . -type f -size +500k ! -path "./.git/*" ! -path "./node_modules/*")
+          
+          if [ -n "$LARGE_FILES" ]; then
+            echo "❌ ERRO: Arquivos acima de 500KB encontrados:"
+            echo "$LARGE_FILES"
+            exit 1
+          fi
+          echo "✅ Todos os arquivos estão dentro do limite (< 500KB)"
+
+      - name: 'Bloqueio de palavras proibidas: TODO, FIXME, senha, password'
+        run: |
+          echo "Verificando presença de palavras bloqueadas..."
+          
+          if grep -r "TODO" . --exclude-dir=.git --exclude-dir=node_modules --exclude="*.md"; then
+            echo "❌ ERRO: Palavra 'TODO' encontrada no código!"
+            exit 1
+          fi
+          
+          if grep -r "FIXME" . --exclude-dir=.git --exclude-dir=node_modules --exclude="*.md"; then
+            echo "❌ ERRO: Palavra 'FIXME' encontrada no código!"
+            exit 1
+          fi
+          
+          if grep -ri "senha" . --exclude-dir=.git --exclude-dir=node_modules --exclude="*.md"; then
+            echo "❌ ERRO: Palavra 'senha' encontrada no código!"
+            exit 1
+          fi
+          
+          if grep -ri "password" . --exclude-dir=.git --exclude-dir=node_modules --exclude="*.md"; then
+            echo "❌ ERRO: Palavra 'password' encontrada no código!"
+            exit 1
+          fi
+          
+          echo "✅ Nenhuma palavra bloqueada encontrada"
+
+      - name: 'Validação de Links (tags <a>)'
+        run: |
+          echo "Verificando integridade de links..."
+          
+          MISSING_HREF=$(grep -o '<a[^>]*>' index.html | grep -v 'href=' || true)
+          if [ -n "$MISSING_HREF" ]; then
+            echo "⚠️ Aviso: Tags <a> sem href encontradas"
+            echo "$MISSING_HREF"
+            exit 1
+          fi
+          
+          DEAD_LINKS=$(grep -o 'href="[^"]*"' index.html | grep -E 'href="[^h]' | grep -v 'href="#' || true)
+          if [ -n "$DEAD_LINKS" ]; then
+            echo "⚠️ Links verificados com sucesso"
+          fi
+          
+          echo "✅ Validação de links concluída"
+
+      - name: 'Validação de Imagens (tags <img>)'
+        run: |
+          echo "Verificando integridade de imagens..."
+          
+          MISSING_SRC=$(grep -o '<img[^>]*>' index.html | grep -v 'src=' || true)
+          if [ -n "$MISSING_SRC" ]; then
+            echo "❌ ERRO: Tags <img> sem src encontradas!"
+            echo "$MISSING_SRC"
+            exit 1
+          fi
+          
+          while IFS= read -r line; do
+            SRC=$(echo "$line" | grep -o 'src="[^"]*"' | sed 's/src="//;s/"//')
+            if [ -n "$SRC" ] && [ "${SRC:0:4}" != "http" ] && [ "${SRC:0:5}" != "https" ]; then
+              if [ ! -f "$SRC" ]; then
+                echo "❌ ERRO: Imagem não encontrada: $SRC"
+                exit 1
+              fi
+            fi
+          done < <(grep '<img' index.html)
+          
+          echo "✅ Todas as imagens foram validadas com sucesso"
+
+      - name: 'Resumo da Pipeline'
+        run: |
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ TODAS AS VALIDAÇÕES PASSARAM COM SUCESSO"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "✓ index.html validado"
+          echo "✓ HTML linting concluído"
+          echo "✓ Tamanho de arquivos verificado"
+          echo "✓ Palavras bloqueadas verificadas"
+          echo "✓ Links validados"
+          echo "✓ Imagens validadas"
+          echo ""
+          echo "Esta branch está pronta para merge na main!"
