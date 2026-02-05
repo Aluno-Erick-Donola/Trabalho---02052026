@@ -1,4 +1,4 @@
-![CI - Integração Contínua](https://github.com/SEU_USUARIO/portfolio-devops/actions/workflows/ci.yml/badge.svg)
+![CI - Integração Contínua](https://github.com/Aluno-Erick-Donola/Trabalho---02052026/actions/workflows/ci.yml/badge.svg)
 
 # 📌 Portfólio DevOps - Infraestrutura Ágil com Práticas DevOps
 
