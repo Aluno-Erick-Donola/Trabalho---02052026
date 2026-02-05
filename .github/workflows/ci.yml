@@ -100,20 +100,17 @@ jobs:
       - name: 'Validação de Links (tags <a>)'
         run: |
           echo "Verificando integridade de links..."
-          
-          MISSING_HREF=$(grep -o '<a[^>]*>' index.html | grep -v 'href=' || true)
+
+          # Captura APENAS tags <a ...>
+          MISSING_HREF=$(grep -E '<a[[:space:]][^>]*>' index.html | grep -v 'href=' || true)
+
           if [ -n "$MISSING_HREF" ]; then
-            echo "⚠️ Aviso: Tags <a> sem href encontradas"
+            echo "❌ ERRO: Tags <a> sem href encontradas:"
             echo "$MISSING_HREF"
             exit 1
           fi
-          
-          DEAD_LINKS=$(grep -o 'href="[^"]*"' index.html | grep -E 'href="[^h]' | grep -v 'href="#' || true)
-          if [ -n "$DEAD_LINKS" ]; then
-            echo "⚠️ Links verificados com sucesso"
-          fi
-          
-          echo "✅ Validação de links concluída"
+
+          echo "✅ Todas as tags <a> possuem href"
 
       - name: 'Validação de Imagens (tags <img>)'
         run: |
