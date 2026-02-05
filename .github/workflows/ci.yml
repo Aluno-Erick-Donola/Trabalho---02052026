@@ -35,7 +35,7 @@ jobs:
 
       - name: Instalar dependências
         run: |
-          npm install -g htmlhint
+          npm install -g htmlhint --no-fund --no-audit
 
       - name: 'Linter HTML: Validação com htmlhint'
         run: |
